@@ -1,0 +1,1396 @@
+<%inherit file="base.html"/>
+
+<%block name="script">
+	## nginx 에서 static 을 호스팅하느라 상대경로를 바꿨습니다
+	## bootswatch 에서 사용하는 lato 폰트를 아예 다운받지 않아봤습니다. 한글만 쓰여서리
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic">
+	<link rel="stylesheet" href="/static/css/add.css">
+	##<link rel="stylesheet" href="/static/css/spin.css">
+	## fontawesome 직접 호스팅(:by nginx)
+	## ../ 에 webfonts 폴더만 추가로 넣으니 되었습니다
+	<link rel="stylesheet" href="/static/css/fontawesome.all.min.css">
+	## fontawemsome 호스팅을 받는 방법
+	##<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+	##<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/regular.css" integrity="sha384-aubIA90W7NxJ+Ly4QHAqo1JBSwQ0jejV75iHhj59KRwVjLVHjuhS3LkDAoa/ltO4" crossorigin="anonymous">
+	##<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/fontawesome.css" integrity="sha384-jLuaxTTBR42U2qJ/pm4JRouHkEDHkVqH0T1nyQXn1mZ7Snycpf6Rl25VBNthU4z0" crossorigin="anonymous">
+	##<script src="/static/js/spin.js"></script>
+</%block>
+
+<%block name="content">
+<div class="my-container" >
+
+	## ---------------------------------------------------------------
+	## 상단 row
+	<div class="my-header">
+		## 서버 선택
+		<div class="server_btn">
+		<div id="div-srv-screener"></div>
+		<div class="dropdown menu_wide_narrow" >
+			<button id="button_serverlist" class="btn btn-secondary btn-large btn-block text-muted dropdown-toggle " type="button" data-toggle="dropdown" >
+				##<span class="glyphicon glyphicon-grain" aria-hidden="true"></span>
+				<i class="fas fa-check-circle text-success">&nbsp;</i>
+				아즈샤라
+				##<span class="icon-checkcircle" >아즈샤라</span>
+			</button>
+			<div id="div_serverlist" class="dropdown-menu scrollable-menu"  style="width:100%">
+				<%doc>
+				% for i in serverlist:
+				<a id="${'server'+str(loop.index)}" class="dropdown-item text-center" href="#" onclick="change_server('${i}');">${i}</a>
+				% endfor
+				</%doc>
+			</div>
+		</div>
+		</div> 
+		## 아이템 세트 셀렉트 
+		<div class="temple_btn">
+		<div id="div-spinner"><div class="spinner"></div></div>
+		<div class="dropdown menu_wide" >
+			<button id="button_itemset" class="btn btn-secondary btn-large btn-block text-muted dropdown-toggle " type="button" data-toggle="dropdown"></button>
+			<%doc>
+			% if current_itemset == '기본구성':
+			<button id="button_itemset" class="btn btn-secondary btn-large btn-block dropdown-toggle text-warning" type="button" data-toggle="dropdown">
+				<i class='far fa-file-alt' style='font-weight:lighter;font-size:1.0em'></i>&nbsp;&nbsp;${current_itemset}</button>
+			% else:
+			<button id="button_itemset" class="btn btn-secondary btn-large btn-block dropdown-toggle text-muted" type="button" data-toggle="dropdown">${current_itemset}</button>
+			% endif
+			</%doc>
+			<div id="div_itemlist" class="dropdown-menu scrollable-menu"  style="width:100%">
+				<%doc>
+				<a id="itemlist0" class="dropdown-item text-center text-primary" href="#">dummy</a>
+				% for i in itemsets:
+					% if i == '만들기':
+				<a id="${'itemlist'+str(loop.index)}" class="dropdown-item text-center text-primary" href="#" onclick="change_itemset('${i}');"><h2>${i}</h2></a>
+					% elif i == '기본구성':
+				<a id="${'itemlist'+str(loop.index)}" class="dropdown-item text-center text-warning" href="#" onclick="change_itemset('${i}');">${i}</a>
+					% else:
+				<a id="${'itemlist'+str(loop.index)}" class="dropdown-item text-center" href="#" onclick="change_itemset('${i}');">${i}</a>
+					% endif
+				% endfor
+				</%doc>
+			</div>
+		</div>
+			<div id="div-form-itemset" class="input_wide" align="center">
+				<form action="javascript:submit_itemset_form();" >
+					<input id="input-itemset" class="form-control-itemset" type="text" placeholder="만들 세트명을 입력하세요">
+					<button id="itemset-confirm" class="btn btn-lg btn-success " type="submit">
+						확인
+					</button>
+				</form>
+				<div id="icon-set-cancel" >
+					X		
+				</div>
+			</div>
+		</div>
+		## 로그인 
+		<div class="login_btn"> 
+		<div id="div-login-screener"></div>
+		<div class="menu_narrow">
+			<button id="button_login" class="btn btn-info btn-block " type="button" onclick="modal_login();">
+				<!-- <button id="button_login" class="btn btn-info btn-block " type="button" onclick="openLoginForm();">-->
+				로그인	
+			</button> 
+		</div>
+		</div>
+	</div>
+
+	## 로그인 modal 
+	<div id="modal_login" class="modal fade">
+		<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+			<div class="modal-content">
+				<div class="modal-myflex-outer">
+					<div style="width:92%;margin-top:5px;">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+
+					<div class="modal-loginform-outer">
+						<form id="login-form" action="javascript:submit_login_form();" method="get">
+							<input id="input-login" class="form-control-login" type="text" placeholder="아이디를 입력하세요" >
+							<input id="submit-login-form" type="submit" style="display:none;"/>
+						</form>
+						<div id="icon-login-cancel">X</div>
+					</div>
+					<div class="confirm_or_cancel">
+						<!-- <label for="submit-login-form" tabindex="0">로그인</label> -->
+						<button type="button" style="width:90px;height:45px;font-size:1.1rem" class="btn btn-info" type="submit" onclick="document.getElementById('login-form').submit();">로그인</button>
+						<button type="button" style="margin-left:10px;width:90px;height:45px;font-size:1.1rem" class="btn btn-secondary" data-dismiss="modal">취소</button>
+					</div>
+					<div id='modal-login-letscreate'>
+						<div style='width:100%;height:1px;background:#444;'></div>
+						<div style="margin-top:10px;">
+							<span class="text-muted" style="font-size:0.7rem;">
+							  아니면
+							</span>
+						</div>
+						<div style="margin-top:5px;margin-bottom:15px">
+							<button type="button" class="btn btn-large btn-outline-success create-id" style="border-radius:12px;font-size:0.9rem;width:200px;" onclick="letscreate();"><i class="fas fa-pencil-alt" style='font-size:1.2rem;'></i>&nbsp;새로운 아이디 만들기</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	## createid modal
+	<div id="modal_createid" class="modal fade">
+		<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+			<div class="modal-content">
+				<div class="modal-myflex-outer">
+					<div style="width:92%;margin-top:5px;">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+
+					<div class="modal-createidform-outer">
+						<form id="createid-form" action="javascript:submit_createid_form();" method="get">
+							<input id="input-createid" class="form-control-createid" type="text" placeholder="생성할 아이디" >
+							<input id="submit-createid-form" type="submit" style="display:none;"/>
+						</form>
+						<div id="icon-createid-cancel">X</div>
+					</div>
+					<div class="confirm_or_cancel">
+						<!-- <label for="submit-login-form" tabindex="0">로그인</label> -->
+						<button type="button" style="width:90px;height:45px;font-size:1.1rem" class="btn btn-success" type="submit" onclick="document.getElementById('createid-form').submit();">만들기</button>
+						<button type="button" style="margin-left:10px;width:90px;height:45px;font-size:1.1rem" class="btn btn-secondary" data-dismiss="modal">취소</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div id="modal_info" class="modal fade">
+		<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+			<div class="modal-content">
+				<div class="modal-content">
+					<div class="modal-body">
+						<div style="height:10px;"></div>
+						<p style="font-size:1.3rem;">
+							<span id="modal_info_text">
+							</span>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	## addeventlistener 'keydown' 이 가능하려면 아래처럼 div에 tabindex를 줘야한다고 합니다 -1부터 가능
+	<div tabindex="0" id="modal_login_with_createid" class="modal fade">
+		<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+			<div class="modal-content">
+				<div class="modal-content">
+					<div class="modal-body">
+						<div style="height:10px;"></div>
+						<p style="font-size:1.1rem;">
+							이미 있는 이름입니다.<br>
+							<span id="modal_login_create_confirm_text" class="text-success">
+							</span>
+							(으)로 로그인할까요?
+							<br>
+						</p>
+						<div class="confirm_or_cancel" style="display:flex;flex-wrap:nowrap;margin-top:10px;">
+						<button class="btn btn-large btn-info" style="width:80px;height:40px;font-size:1.1rem" onclick="login_with_createid_confirm();">로그인</button>
+						<div style="width:10px;"></div>
+						<button class="btn btn-large btn-secondary" style="width:80px;height:40px;font-size:1.1rem" data-dismiss="modal">취소</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="modal_delete" class="modal fade">
+		<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+			<div class="modal-content">
+				<div class="modal-content">
+					<div class="modal-body">
+						<p style="font-size:1.3rem;">
+						<span id="delete_name">
+						</span>
+						, 삭제합니까?
+						<br>
+						</p>
+						<div class="confirm_or_cancel" style="display:flex;flex-wrap:nowrap;">
+						<button class="btn btn-large btn-danger" style="width:80px;height:40px;font-size:1.1rem" onclick="delete_confirm();">삭제</button>
+						<div style="width:10px;"></div>
+						<button class="btn btn-large btn-secondary" style="width:80px;height:40px;font-size:1.1rem" data-dismiss="modal">취소</button>
+						<br>
+						<br>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	## ---------------------------------------------------------------
+	## ---------------------------------------------------------------
+	## 메인 row
+	<div class="my-main">
+			## % for a in ar.keys():
+			##% for a, b in sorted(ar.items()):
+			% for a in range(0, 6):
+			<div class="card" >
+				<div class="card-img-top bg-secondary"  >
+					<center>
+						<%doc>
+						border를 img태그를 이용하고 아이템이미지를 div의 백그라운드로 거꾸로
+						사용해서border가 잘리는문제를 해결하였습니다
+						</%doc>
+						##<div id="image${loop.index}" class="iconlarge" style="background-image: url('${imageroot + ar[a]['image']}'+'.jpg')">
+						##<div id="image${a}" class="iconlarge" style="background-image: url('${imageroot + b['image'] + '.jpg'}')">
+						<div id="image${a}" class="iconlarge" style="">
+							<a href="javascript:show_item_form(${a});">
+								## nginx 에서 static 을 호스팅하느라 상대경로를 바꿨습니다
+								##<img src="../static/css/images/border.png"/>
+								<img src="/static/css/images/border.png"/>
+							</a>
+						</div>
+					</center>
+				</div>
+
+				<div class="card-body main-item" >
+					## 아이템명 변경 입력 팝업입니다
+					<div id="div-form-item${a}" align="center">
+						<form action="javascript:submit_item_form(${a});" >
+							<input id="input-item${a}" class="form-control-item" type="text" placeholder="아이템명을 입력하세요">
+							<button class="btn btn-info btn-lg item-confirm" type="submit">
+								확인
+							</button>
+						</form>
+					</div>
+					<div id="icon-cancel${a}" >
+						X		
+					</div>
+					<div class="card-title" align="center"  >
+						##<a href="javascript:show_item_form(${a});"><span id="itemname${a}" style="font-size:1.2rem">${b['name']}</span><span id="num${a}" class="badge badge-success badge-pill" >${b['num']}</span>
+						<a href="javascript:show_item_form(${a});"><span id="itemname${a}" style="font-size:1.2rem">WoW 토큰</span><span id="num${a}" class="badge badge-success badge-pill" >1111</span>
+						</a>
+					</div>
+					<ul class="list-group list-group-flush">
+					<li class="list-group-item">
+					<p class="card-text" align="center">
+					##<span id="moneygold${loop.index}" class="moneygold">${int(b['gold'])}</span>
+					##<span id="moneysilver${loop.index}" class="moneysilver">${int(b['silver'])}</span>
+					##<span id="moneycopper${loop.index}" class="moneycopper">${int(b['copper'])}</span>
+					<span id="moneygold${a}" class="moneygold">11</span>
+					<span id="moneysilver${a}" class="moneysilver">11</span>
+					<span id="moneycopper${a}" class="moneycopper">11</span>
+					<br>
+					##<span id="min_seller${loop.index}" class="badge badge-secondary text-muted" >${b['min_seller']}</span>
+					<span id="min_seller${a}" class="badge badge-secondary text-muted" ></span>
+					</p>
+					</li>
+					<div style="font-size:12px;margin-top:0px;" align="center">
+						##차트
+						<li class="list-group-item" align="center">
+							##<canvas id="chLine${loop.index}" style="width:200px;"></canvas>
+							<canvas id="chLine${a}" style="width:200px;"></canvas>
+						##주기선택
+							##<div align="center" class="btn-block btn-group-sm btn-group-toggle center" style="transform:scale(0.6);" data-toggle="buttons">
+							<div align="center" class="btn-group btn-group-toggle center"  data-toggle="buttons">
+								##<label id="lb${loop.index}0" class="btn btn-outline-primary text-muted active">
+								<label id="lb${a}0" class="btn btn-outline-primary text-muted active">
+									<input type="radio" name="options" id="option1" autocomplete="off">12시
+								</label>
+								##<label id="lb${loop.index}1" class="btn btn-outline-primary text-muted">
+								<label id="lb${a}1" class="btn btn-outline-primary text-muted">
+									<input type="radio" name="options" id="option2" autocomplete="off">24시
+								</label>
+								##<label id="lb${loop.index}2" class="btn btn-outline-primary text-muted">
+								<label id="lb${a}2" class="btn btn-outline-primary text-muted">
+									<input type="radio" name="options" id="option3" autocomplete="off">48시
+								</label>
+								##<label id="lb${loop.index}3" class="btn btn-outline-primary text-muted">
+								<label id="lb${a}3" class="btn btn-outline-primary text-muted">
+									<input type="radio" name="options" id="option3" autocomplete="off">주일
+								</label>
+								##<label id="lb${loop.index}4" class="btn btn-outline-primary text-muted">
+								<label id="lb${a}4" class="btn btn-outline-primary text-muted">
+									<input type="radio" name="options" id="option4" autocomplete="off">30일
+								</label>
+							</div>
+						</li>
+					</div>
+					</ul>
+				</div>
+			</div>
+			% endfor
+	</div>
+
+	## ---------------------------------------------------------------
+	## bottom row
+	<div class="my-footer">
+		<div >
+			<span id="designed_by" class="text-secondary "></span>
+			<span id="gathered_from" class="text-secondary "></span>
+			<span id="dumped_at" class="text-secondary "></span>
+			<span id="update_time" class="text-primary "></span>
+			<br>
+			<%doc>
+			<span id="thx_for" class="text-secondary "></span>
+			<span id="donation" class="text-muted"></span>
+			</%doc>
+		</div>
+	</div>
+</div>
+
+
+	<script charset="utf-8">
+		// 차트에서 포인트 갯수를 정의합니다
+		window.chart_column_num = 24;
+		window.cur_itemset = '${current_itemset}';
+		window.cur_itemset_code = '${current_itemset_code}';
+		window.socket = 0;
+		##window.cur_user = 'guest';
+		window.cur_user = '${user}';
+		window.cur_user_code = '${user_code}';
+		window.itemsets = [];
+		window.items = {};
+		window.img_host = 'https://wow.zamimg.com/images/wow/icons/large/';
+		window.chart_chains = new Array;
+		window.chart = new Array;
+		window.server = '아즈샤라';
+		window.serverlist = [];
+		window.form_opened = new Array;
+		for (let i=0;i<6;i++) {
+			form_opened[i] = 0;
+		}
+		function modal_createid(){
+			$('#modal_createid').on('shown.bs.modal', function () {
+				$('#input-createid').focus();
+			});
+			$('#modal_createid').modal();
+		}
+		function modal_login(){
+			$('#modal_login').on('shown.bs.modal', function () {
+				$('#input-login').focus();
+			});
+			$('#modal_login').modal();
+		}
+		function show_item_form(num) {
+			##alert('div-form-item'+num);
+			##alert(document.getElementById('div-form-item'+num).style.display);
+			if(form_opened[num]){
+				closeForm(num);
+			}
+			else {
+				openForm(num);
+			}
+		}
+		function loginned() {
+			## 로그인 버튼을 변경해줍니다
+		}
+
+		function submit_createid_form() {
+			show_spinner();
+			var name = document.getElementById('input-createid').value;
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					if(data.success == '1') {
+						document.getElementById('input-createid').value = '';
+						$('#modal_createid').modal('hide');
+						code = data.code;
+						cur_user_code = code;
+						cur_itemset_code = 'default';
+						##window.history.pushState('', '', '/u/' + cur_user_code + '/default');
+						cur_user = data.name;
+						rq_itemsets(function (){change_itemset(cur_user);});
+						loginned();
+					}
+					else {
+						$('#modal_createid').modal('hide');
+						show_modal_login_confirm(data.name);
+						##show_modal_info('이미 있는 이름입니다', 1100);
+						##setTimeout(function (){$('#modal_createid').modal();}, 1000);
+					}
+					hide_spinner();
+				}
+			};
+			xhttp.open("GET", '/create_user/' + name , true);
+			xhttp.send();
+		}
+
+		function submit_login_form(str='') {
+			show_spinner();
+			var name = '';
+			if(str) {
+				name = str;
+			}
+			else {
+				name = document.getElementById('input-login').value;
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					if(data.success == '1') {
+						document.getElementById('input-login').value = '';
+						$('#modal_login').modal('hide');
+						cur_user_code = data.code;
+						cur_user = data.name;
+						itemsets = data.itemsets;
+						update_itemset_dropdown();
+						## 해당아이디의 디폴트 세트명은 유저이름이라
+						change_itemset(cur_user);	
+						##rq_itemsets(function (){change_itemset(cur_user);});
+						loginned();
+					}
+					else {
+						$('#modal_login').modal('hide');
+						show_modal_info('없는 사용자입니다', 1100);
+						setTimeout(function (){$('#modal_login').modal();}, 1000);
+					}
+					hide_spinner();
+				}
+			};
+			xhttp.open("GET", '/login/' + name , true);
+			xhttp.send();
+		}
+		function submit_item_form(num) {
+			##alert('div-form-item'+num);
+			##alert(document.getElementById('div-form-item'+num).style.display);
+			closeForm(num);
+			var i_name = document.getElementById('input-item'+num).value;
+			i_name = i_name.trim();
+			if(i_name) {
+				## vanilla js 를 이용해봅니다
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if(this.readyState == 4 && this.status == 200) {
+						var data = JSON.parse(this.responseText);
+						if(data.success) {
+							update_item_area(data.num, data.indiv_ar);
+						}
+						else {
+							show_modal_info('없는 아이템입니다', 800);
+							setTimeout(function (){openForm(num);}, 900);
+						}
+					}
+				};
+				fullstr = collect_items_tostring(num, i_name);
+				var dummy = new Date().getTime();
+				xhttp.open("GET", '/update_indiv/' + num + '/' + server + '/' + cur_user 
+								+ '/' + cur_itemset + '/' + i_name + '/' + fullstr + '/' + dummy,true);
+				xhttp.send();
+			}
+		}
+		function submit_itemset_form(num) {
+			closeSetForm();
+			var s_name = document.getElementById('input-itemset').value;
+			s_name = s_name.trim();
+			if(s_name) {
+				## vanilla js 를 이용해봅니다
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if(this.readyState == 4 && this.status == 200) {
+						var data = JSON.parse(this.responseText);
+						if(data.success == '1') {
+							## 생성성공하였을 경우 처리합니다
+							document.getElementById('input-itemset').value = '';
+							## callback을 추가하여 itemsets 업데이트 후 해당이름의 아이템으로 change합니다
+							rq_itemsets(function () {change_itemset(s_name);});
+							##change_itemset(s_name);
+						}
+						else if (data.success == '0') {
+							alert('이미 있는 세트명입니다');
+						}
+					}
+				};
+				xhttp.open("GET", '/create_itemset/' + cur_user + '/' + s_name, true);
+				xhttp.send();
+			}
+		}
+
+		function update_chart(a, b) {
+			if(checked[a] != b){
+				checked[a] = b;
+				min_chain_ = window.chart_chains[a];
+				var data_ = [],
+					len_ = min_chain_.length;
+				//30분 주기일 경우
+				if(b == 0){
+					for (let j=len_ - chart_column_num;j<=len_ - 1;j++){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+				}
+				//60분 주기일 경우
+				else if(b == 1){
+					for (let j=len_ - chart_column_num*2 + 1;j<=len_ - 1;j+=2){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+				}
+				//60*2분 주기일 경우
+				else if(b == 2){
+					for (let j=len_ - chart_column_num*4 + 3;j<=len_ - 1;j+=4){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+				}
+				//30*2*7(=420)분 주기일 경우
+				else if(b == 3){
+					for (let j=len_ - chart_column_num*14 + 13;j<=len_ - 1;j+=14){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+				}
+				//30*2*24(=1440)분 주기일 경우
+				//30*2*30(=1800)분 주기일 경우
+				else if(b == 4){
+					##for (let j=len_ - chart_column_num*48 + 47;j<=len_ - 1;j+=48){
+					for (let j=len_ - chart_column_num*60 + 59;j<=len_ - 1;j+=60){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+				}
+				##eval('chart'+a).data.labels = labels_;
+				##eval('chart'+a).data.datasets[0].data = data_;
+				##eval('chart'+a).update();
+				chart[a].data.labels = labels_;
+				chart[a].data.datasets[0].data = data_;
+				chart[a].update();
+			}
+		}
+		function setupWebSocket(){
+			this.socket = new WebSocket('wss://'+window.location.host+'/ws');
+			##this.socket = new WebSocket('ws://'+window.location.host+'/ws');
+			this.socket.onopen = function(){
+				socket.send('connect');
+			}
+			this.socket.onclose = function(){
+				setTimeout(setupWebSocket, 1000);
+			}
+			// 서버로부터 update 문자열이 들어왔을 경우
+			this.socket.onmessage = function(msg){
+				if (msg.data == 'update'){
+					rq_dumptime();
+					rq_itemset(cur_itemset);
+					rq_itemsets();
+					<%doc>
+					var xhttp = new XMLHttpRequest();
+					xhttp.onreadystatechange = function() {
+						if (this.readyState == 4 && this.status == 200) {
+							var data = JSON.parse(this.responseText);
+							update_page(data);
+						}
+					};
+					var dummy = new Date().getTime();
+					xhttp.open("GET", '/update/' + server + '/' + \
+										cur_user + '/' + cur_itemset + '/' + dummy, true);
+					xhttp.send();
+					//$.getJSON('/update/' + server + '/' + cur_itemset, function(data){update_page(data);});
+					</%doc>
+				}
+			}
+		}	
+
+		function create_itemset() {
+			openSetForm();
+		}
+		function checkif_defaultset(itemset) {	
+			var ret = 0;
+			if((cur_user=='guest' && itemset == '기본구성') || (cur_user!='guest' && itemset==cur_user)) {
+				ret = 1;
+			}
+			return ret;
+		}
+
+		function coloring_setbutton(cur_itemset) {
+			##if((cur_user=='guest' && cur_itemset == '기본구성') || (cur_user!='guest' && cur_itemset==cur_user)) {
+			if(checkif_defaultset(cur_itemset)) {
+			##if(cur_set.trim() == '기본구성') {
+				document.getElementById("button_itemset").className = \
+					'btn btn-secondary btn-large btn-block dropdown-toggle text-warning';
+			}
+			else {
+				document.getElementById("button_itemset").className = \
+					'btn btn-secondary btn-large btn-block dropdown-toggle text-muted';
+			}
+		}
+
+		function change_server(srver){
+			## 이후 각 드롭다운 항목들을 새로 만들어 교체해줍니다
+			show_spinner();
+			window.server = srver;
+			rq_itemset(cur_itemset);
+			rq_dumptime();
+			document.getElementById("div_serverlist").innerHTML = ""; 
+			for(let i=0;i<serverlist.length;i++){
+				// cur_itemset이 아닌 항목들만 추가합니다
+				i_server = serverlist[i];
+				if(i_server != server){
+					document.getElementById("div_serverlist").innerHTML += \
+						"<a id='server" + i + \
+						"' class='dropdown-item text-center' href='javascript:;'" + \
+						"onclick='change_server(\""+ i_server + "\")';>" + i_server + "</a>";
+				}
+			}
+			## 혹시 아이템 입력창이 열려있을 수 있으므로 모두 닫습니다.
+			for (let i=0;i<6;i++){
+				closeForm(i);
+			}
+			
+			document.getElementById("button_serverlist").innerHTML = \
+				"<i class='fas fa-check-circle text-success'>&nbsp;</i>" + server;
+		}
+
+		function change_itemset(itemset){
+			// 이후 각 드롭다운 항목들을 새로 만들어 교체해줍니다
+			cur_itemset = itemset;
+			document.getElementById("div_itemlist").innerHTML = ""; 
+			ilen = itemsets.length;
+			for(let it=0;it<ilen;it++){
+				// cur_itemset이 아닌 항목들만 추가합니다
+				if(itemsets[it] != itemset){
+					document.getElementById("div_itemlist").innerHTML += "\
+				<a id='itemlist" + it +"' class='dropdown-item text-center' href='javascript:;' onclick='change_itemset(\"" + itemsets[it] + "\");'>" + itemsets[it] + "</a>";
+				}
+			}
+			if(checkif_defaultset(itemset)) {
+			##if((cur_user=='guest' && itemset == '기본구성') || (cur_user!='guest' && itemset==cur_user)) {
+				document.getElementById("button_itemset").innerHTML = \
+				"<i class='far fa-file-alt' style='font-weight:lighter;font-size:1.0em'></i>&nbsp;&nbsp;" + itemset;
+			}
+			else {
+				document.getElementById("button_itemset").innerHTML = itemset; 
+			}
+			coloring_setbutton(itemset);
+			## 혹시 아이템 입력창이 열려있을 수 있으므로 모두 닫습니다.
+			for (let i=0;i<6;i++){
+				closeForm(i);
+			}
+
+			## xmlrequest 전송전 버튼색상을 변경합니다
+			show_spinner();
+			// 역시 vanilla js 로 변경해봅니다
+			rq_itemset(itemset, function () {
+					if(cur_user != 'guest') {
+						window.history.pushState('', '', '/u/' + cur_user_code + '/' + cur_itemset_code);
+					}
+					update_itemset_dropdown();
+			});
+			##alert('in change_itemset: ' + cur_user + '/'+ cur_itemset_code +' 들와야하는디');
+			##update_itemset_dropdown();
+		}
+
+		function progress_start(id_, color_){
+			##document.getElementById(id_).style.WebkitTransition = "background 3.2s";
+			document.getElementById(id_).style.transition = "background 3.2s";
+			##document.getElementById(id_).style.transitionTimingFunction = "linear";
+			document.getElementById(id_).style.transitionTimingFunction = "ease";
+			##document.getElementById(id_).style.background = "#e74c3c"; // danger red
+			##document.getElementById(id_).style.background = "#00bc8c"; // success mint
+			document.getElementById(id_).style.background = color_; // info lightblue
+			##document.getElementById(id_).style.WebkitTransform = "scale(1.2)"; // info lightblue
+			##document.getElementById(id_).style.transform = "scale(1.2)"; // info lightblue
+		}
+		function progress_end(id_){
+			document.getElementById(id_).style.WebkitTransition = "all 0.1s";
+			document.getElementById(id_).style.transition = "all 0.1s";
+			document.getElementById(id_).style.background = "#444444";
+			##document.getElementById(id_).style.WebkitTransform = "scale(1.0)"; // info lightblue
+			##document.getElementById(id_).style.transform = "scale(1.0)"; // info lightblue
+		}
+
+		## 개별 아이템 업그레이드 함수입니다
+		function update_indiv(data){
+			var ar = data.indiv_ar;
+			var i = data.num;
+			if(!ar.name) return;
+			document.getElementById("input-item"+i).value = '';
+			document.getElementById("image"+i).setAttribute("style", "background-image: url('" + img_host + ar.image + ".jpg')"); 
+			document.getElementById("itemname"+i).innerHTML = ar.name;
+			document.getElementById("num"+i).innerHTML = ar.num;
+			document.getElementById("moneygold"+i).innerHTML = ar.gold;
+			document.getElementById("moneysilver"+i).innerHTML = ar.silver;
+			document.getElementById("moneycopper"+i).innerHTML = ar.copper;
+			document.getElementById("min_seller"+i).innerHTML = ar.min_seller;
+
+			##실제로 클릭액션을 해야하는 클래스라 안먹힙니다
+			##document.getElementById("lb"+i+"0").checked = 1; 
+			document.getElementById("lb"+i+"0").click();
+			
+			## 아직chLine이 미처 생성되지 않았을 경우 exception이 발생해 이상동작이 발생하는듯 
+			if(eval('chart'+i)){
+				## chart_chain 전역배열변수에 일단 저장을 해야합니다
+				chart_chains[i] = ar.min_chain;  
+				min_chain_ = chart_chains[i];
+				var data_ = [],
+					len_ = min_chain_.length;
+				//alert(min_chain_[0]);
+				for (let j=len_ - chart_column_num;j<=len_ - 1;j++){
+				//for (i=0;i<=3;i++){
+					data_.push(min_chain_[j] / 10000);
+				}
+				var labels_ = [];
+				for(let l_=0;l_<chart_column_num;l_++){
+					labels_.push("");
+				}
+				eval('chart'+i).data.labels = labels_;
+				eval('chart'+i).data.datasets[0].data = data_;
+				eval('chart'+i).update();
+			}
+		}
+
+		## itemsets의 제일 앞에 생성(+)를 삽입해 줍니다
+		function deco_itemsets() {
+			if(itemsets[0] != ' 만들기') {
+				itemsets.unshift(' 만들기');
+			}
+		}
+
+		function update_itemset_dropdown() {
+			deco_itemsets();
+			## 이후 각 드롭다운 항목들을 새로 만들어 교체해줍니다
+			document.getElementById("div_itemlist").innerHTML = ""; 
+			
+			## 새로만들기항목
+			document.getElementById("div_itemlist").innerHTML += "\
+			<a id='itemlist0' class='dropdown-item text-center font-weight-bolder text-info' href='javascript:;' onclick='create_itemset();'> <i class='fas fa-folder-open' style='font-weight:lighter;font-size:1.0em;'>&nbsp;</i>" + itemsets[0] + "</a>";
+			## 아이템세트들
+			window.dropdown_pair = {};
+			for(let it=1;it<itemsets.length;it++){			//0이 아닌 1부터시작 
+				## cur_itemset이 아닌 항목들만 추가합니다
+				var cur = itemsets[it];
+				if(cur != cur_itemset){
+					##alert(cur + ',' + cur_user);
+					if(checkif_defaultset(cur)) {
+					##if((cur_user=='guest' && cur == '기본구성') || (cur_user!='guest' && cur==cur_user)) {
+						document.getElementById("div_itemlist").innerHTML += " \
+						<a id='itemlist" + it +"' class='dropdown-item text-center text-warning' href='javascript:;' onclick='change_itemset(\"" + cur + "\");'><i class='far fa-file-alt' style='font-weight:lighter;font-size:1.0em'></i>&nbsp;&nbsp;" + cur + "</a>";
+					}
+					else {
+						## 아이템명 뒤에 휴지통을 추가합니다
+						dropdown_pair[it] = cur;
+						document.getElementById("div_itemlist").innerHTML += \
+							"<div id='dropdown-delete" + it + "' class='dropdown-delete'>" + 
+							"<i class='far fa-trash-alt text-muted'></i></div>" +
+							"<a id='itemlist" + it +"' class='dropdown-item text-center'" +
+							"href='javascript:;' onclick='change_itemset(\"" + cur + "\");'>" + cur + "</a>";
+					}
+				}
+			}
+			## 위의 if-else 내에서 innerHTML 작성하면서 addeventlistener를 행하니 동작하지 않았습니다. 
+			## 그래서 for loop 번거롭지만 별도로 뺐습니다.
+			## 또한 inner function closure 문제 관련해서도 추후 별도의 함수선언으로 뺐습니다
+			function fn_modal_delete(i) {
+				return function () {show_modal_delete(dropdown_pair[i]);}
+			}
+			for(let it=1;it<itemsets.length;it++){			//0이 아닌 1부터시작 
+				if(document.getElementById('dropdown-delete'+it)){
+					##document.getElementById('dropdown-delete'+it).addEventListener("click", function(){
+						##show_modal_delete(dropdown_pair[it]);}); 
+					document.getElementById('dropdown-delete'+it).addEventListener("click", \
+																fn_modal_delete(it));
+				}
+			}
+			
+			## 아이콘 데코레이션 작업
+			if(checkif_defaultset(cur_itemset)) {
+			##if((cur_user=='guest' && cur_itemset == '기본구성') || (cur_user!='guest' && cur_itemset==cur_user)) {
+			##if(cur_itemset == '기본구성') {
+				document.getElementById("button_itemset").innerHTML = "<i class='far fa-file-alt' style='font-weight:lighter;font-size:1.0em'></i>&nbsp;&nbsp;" + cur_itemset; 
+			}
+			else {
+				document.getElementById("button_itemset").innerHTML = cur_itemset;
+			}
+		
+			coloring_setbutton(cur_itemset);
+		}
+		##function update_dumped_time(data) {
+		function update_dumped_time(time) {
+			##document.getElementById("dumped_at").innerHTML =  data.server + " DB dumped recently at &nbsp;";
+			##document.getElementById("update_time").innerHTML = data.time;
+			document.getElementById("dumped_at").innerHTML =  server + " DB dumped recently at ";
+			document.getElementById("update_time").innerHTML = time;
+		}
+		function show_spinner() {
+			##spinner show
+			document.getElementById("div-spinner").style.display="flex";
+			document.getElementById("div-srv-screener").style.display="flex";
+			document.getElementById("div-login-screener").style.display="flex";
+		}
+		function hide_spinner() {
+			##spinner 제거
+			document.getElementById("div-spinner").style.display="none";
+			document.getElementById("div-srv-screener").style.display="none";
+			document.getElementById("div-login-screener").style.display="none";
+		}
+		function update_indiv_chart(n, min_chain) {
+			## 아직chLine이 미처 생성되지 않았을 경우 exception이 발생해 이상동작이 발생하는듯 
+			if(chart[n]){
+				//min_chain_ = data[Object.keys(data)[i]].min_chain;
+				chart_chains[n] = min_chain;
+				min_chain_ = min_chain;
+				//alert(min_chain_[min_chain_.length - 1]);
+				//eval('chLine' + i).data = min_chain_[min_chain_.length - 1] / 10000;
+				let data_ = [],
+					len_ = min_chain_.length;
+				//alert(min_chain_[0]);
+				for (let j=len_ - chart_column_num;j<=len_ - 1;j++){
+				//for (i=0;i<=3;i++){
+					data_.push(min_chain_[j] / 10000);
+				}
+				var labels_ = [];
+				for(let l_=0;l_<chart_column_num;l_++){
+					labels_.push("");
+				}
+				##alert(data_[0]);
+				##eval('chLine' + i).data = min_chain_.slice(,min_chain_.length - 1) / 10000);
+				##eval('chart' + i).data = full_data_; 
+				##eval('chart' + i).data.datasets[0].data = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]; 
+				chart[n].data.labels = labels_;
+				chart[n].data.datasets[0].data = data_;
+				chart[n].update();
+				//alert('엄지척');
+			}
+		}
+
+		function update_charts(data) {
+			## 아직chLine이 미처 생성되지 않았을 경우 exception이 발생해 이상동작이 발생하는듯 
+			for(var i=0;i<6;i++) {
+				##if(eval('chart'+i)){
+				if(chart[i]){
+					chart_chains[i] = data[i].min_chain;
+					min_chain_ = chart_chains[i];
+					let data_ = [],
+						len_ = min_chain_.length;
+					##alert(min_chain_[0]);
+					for (let j=len_ - chart_column_num;j<=len_ - 1;j++){
+					##for (i=0;i<=3;i++){
+						data_.push(min_chain_[j] / 10000);
+					}
+					var labels_ = [];
+					for(let l_=0;l_<chart_column_num;l_++){
+						labels_.push("");
+					}
+					##eval('chart'+i).data.labels = labels_;
+					##eval('chart'+i).data.datasets[0].data = data_;
+					##eval('chart'+i).update();
+					chart[i].data.labels = labels_;
+					chart[i].data.datasets[0].data = data_;
+					chart[i].update();
+					##alert('엄지척');
+					##eval('chLine' + i).addData = data_; 
+					##eval('chLine' + i).update();
+				}
+			}
+		}
+		function update_serverlist() {
+			document.getElementById("div_serverlist").innerHTML = ""; 
+			for(let i=0;i<serverlist.length;i++){
+				## cur_itemset이 아닌 항목들만 추가합니다
+				i_server = serverlist[i];
+				if(i_server != server){
+					document.getElementById("div_serverlist").innerHTML += \
+						"<a id='server" + i + "' class='dropdown-item text-center' href='javascript:;'" + \
+						"onclick='change_server(\""+ i_server + "\")';>" + i_server + "</a>";
+				}
+			}
+			## 혹시 아이템 입력창이 열려있을 수 있으므로 모두 닫습니다.
+			##for (let i=0;i<6;i++){
+				##closeForm(i);
+			##}
+		}
+
+		function update_item_area(n, itemdata) {
+			items[n] = itemdata.name;
+			document.getElementById("input-item"+n).value = '';
+			document.getElementById("image"+n).setAttribute("style", "background-image: url('" + img_host + itemdata.image + ".jpg')"); 
+			document.getElementById("itemname"+n).innerHTML = itemdata.name;
+			document.getElementById("num"+n).innerHTML = itemdata.num;
+			document.getElementById("moneygold"+n).innerHTML = itemdata.gold;
+			document.getElementById("moneysilver"+n).innerHTML = itemdata.silver;
+			document.getElementById("moneycopper"+n).innerHTML = itemdata.copper;
+			document.getElementById("min_seller"+n).innerHTML = itemdata.min_seller;
+
+			##실제로 클릭액션을 해야하는 클래스라 안먹힙니다
+			##document.getElementById("lb"+i+"0").checked = 1; 
+			document.getElementById("lb"+n+"0").click();
+			update_indiv_chart(n, itemdata.min_chain);
+		}
+
+
+		## 전체 6개 아이템 업데이트 함수입니다
+		function update_page(data){
+			## data 갯수, 즉 6회동안 각 요소 갱신을 반복합니다
+			show_spinner();
+			t = data.time;
+			itemsets = data.itemsets;
+			serverlist = data.serverlist;
+			data = data.ar;
+			update_serverlist();
+			## sort를 통해 아래와같이 할수도 있지만 이미 html상 해당id들이 정렬된채 생성된 상태라 상관없습니다
+			for (let i=0;i < Object.keys(data).length;i++) {
+				document.getElementById("image"+i).setAttribute("style", "background-image: url('" + img_host + data[i].image + ".jpg')"); 
+				document.getElementById("itemname"+i).innerHTML = data[i].name;
+				document.getElementById("num"+i).innerHTML = data[i].num;
+				document.getElementById("moneygold"+i).innerHTML = data[i].gold;
+				document.getElementById("moneysilver"+i).innerHTML = data[i].silver;
+				document.getElementById("moneycopper"+i).innerHTML = data[i].copper;
+				document.getElementById("min_seller"+i).innerHTML = data[i].min_seller;
+
+				document.getElementById("lb"+i+"0").click();
+				
+			}
+			update_charts(data);
+			update_itemset_dropdown();
+			hide_spinner();
+		} //function update_page() ends
+
+		function show_modal_info(text, time) {
+			document.getElementById('modal_info_text').innerHTML = text;
+			$('#modal_info').modal();
+			setTimeout(function () {$('#modal_info').modal('hide');}, time);
+		}
+
+		function show_modal_delete(setname) {
+			document.getElementById('delete_name').innerHTML = setname;
+			$('#modal_delete').modal();
+		}
+		function show_modal_login_confirm(id) {
+			document.getElementById('modal_login_create_confirm_text').innerHTML = id;
+			$('#modal_login_with_createid').modal();
+		}
+
+		function login_with_createid_confirm() {
+			$('#modal_login_with_createid').modal('hide');
+			var id = document.getElementById('modal_login_create_confirm_text').innerHTML;
+			submit_login_form(id); 
+			document.getElementById('modal_login_create_confirm_text').innerHTML = '';
+			document.getElementById('input-createid').value='';
+		}
+
+		function delete_confirm() {
+			setname = delete_name;
+			$('#modal_delete').modal('hide');
+			## modal
+			show_spinner();
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if(this.readyState == 4) {
+					hide_spinner();
+					if (this.status == 200) {
+						var data = JSON.parse(this.responseText);
+						if(data.success == '1') {
+							document.getElementById('input-itemset').value = '';
+							## 아래 생성 주석과 달리 delete는 콜백으로 추가 아이템 선택 루틴이 필요없습니다
+							## callback을 추가하여 itemsets 업데이트 후 해당이름의 아이템으로 change합니다
+							rq_itemsets();
+						}
+						else if (data.success == '0') {
+							show_modal_info('이미 없는 세트명입니다', 1300);
+							rq_itemsets();
+							##alert('이미 없는 세트명입니다');
+						}
+					}
+				}
+			};
+			xhttp.open("GET", '/delete_itemset/' + cur_user + '/' + setname ,true);
+			xhttp.send();
+		}
+		function openLoginForm() {
+			document.getElementById("input-login").focus();
+			document.getElementById('icon-login-cancel').style.display = 'flex';
+			document.getElementById('modal-createid-outer').style.display = 'none';
+			document.getElementById('modal-login-outer').style.display = 'block';
+		}
+
+		function closeLoginForm() {
+			$('#modal_login').modal('hide');
+		}
+		function closeDeleteModal() {
+			$('#modal_delete').modal('hide');
+		}
+		function closeCreateIDModal() {
+			$('#modal_createid').modal('hide');
+		}
+		function closeLoginWithCreateIDModal() {
+			$('#modal_login_with_createid').modal('hide');
+		}
+
+		function openSetForm() {
+			document.getElementById("div-form-itemset").style.display = 'flex';
+			document.getElementById("input-itemset").focus();
+			document.getElementById('icon-set-cancel').style.display = 'flex';
+		}
+
+		function closeSetForm() {
+			document.getElementById("div-form-itemset").style.display = 'none';
+			document.getElementById('icon-set-cancel').style.display = 'none';
+		}
+
+		function closeForm(num) {
+			document.getElementById('div-form-item'+num).style.display = 'none';
+			document.getElementById('icon-cancel'+num).style.display = 'none';
+			form_opened[num] = 0;
+		}
+		function openForm(num) {
+			document.getElementById('div-form-item'+num).style.display = 'flex';
+			document.getElementById("input-item"+num).focus();
+			document.getElementById('icon-cancel'+num).style.display = 'flex';
+			form_opened[num] = 1;
+		}
+
+		function letscreate() {
+			$('#modal_login').modal('hide');
+			modal_createid();
+		}
+
+		// jQuery document ready 를 대신하는 자바스크립트입니다 다만 익스플로러 9이하에선 안된다는 말도 있네요
+		document.addEventListener("DOMContentLoaded", function(){
+			itemsets = ${itemsets};
+			serverlist = ${serverlist};
+			if(cur_user!='guest') {
+				window.history.pushState('', '', '/u/' + cur_user_code + '/' + cur_itemset_code);
+			}
+
+			window.checked = new Array;
+			if(window.addEventListener) {
+				window.addEventListener("keydown", function (event) {
+					//alert(event.key);
+					## IE에선 Esc 입니다
+					if(event.key == "Escape" || event.key == "Esc"){
+						for(let i=0;i<6;i++) {
+							closeForm(i);
+						}
+						closeSetForm();
+						closeLoginForm();
+						closeDeleteModal();
+						closeCreateIDModal();
+						closeLoginWithCreateIDModal();
+					}
+				});
+			}
+			else if (document.attachEvent) { // IE 용으로 만들었는데 이문제가 아니었습니다. 또한IE10이상에서는
+											// 해결된 문제로 보입니다
+				document.attachEvent("keydown", function (event) {
+					//alert(event.key);
+					if(event.key == "Escape"){
+						for(let i=0;i<6;i++) {
+							closeForm(i);
+						}
+						closeSetForm();
+						closeLoginForm();
+					}
+				});
+			}
+			<%doc>
+			else (document.addEventListener) {
+				alert('??');
+			}
+			</%doc>
+
+			document.getElementById('modal_login_with_createid').addEventListener('keydown', function (event) {
+				if(event.key == "Enter"){
+					login_with_createid_confirm();
+				}
+			});
+
+			## explorer 11 에서 let 이 제대로 지원안된다고 합니다.MDN에 따르면,
+			## function scope밖에 없으므로classic한 방법인 별도의 function에서 생성하는 방법을 택했습니다
+			## 참고:https://stackoverflow.com/questions/750486/javascript-closure-inside-loops-simple-practical-example?page=1&tab=votes#tab-top
+			function fn_update_chart(i,j) {
+				return function () {update_chart(i, j);}
+			}
+			function fn_item_cancel(i) {
+				return function () {
+					if(document.getElementById("input-item"+i).value == '') {
+						closeForm(i);
+					}
+					else {
+						document.getElementById("input-item"+i).value=''; 
+						document.getElementById("input-item"+i).focus();
+					}
+				}
+			}
+			for (let uu=0;uu<6;uu++) {
+				checked[uu] = 0;
+				document.getElementById('lb' + uu + '0').addEventListener('click', fn_update_chart(uu, 0), false);
+				document.getElementById('lb' + uu + '1').addEventListener('click', fn_update_chart(uu, 1), false);
+				document.getElementById('lb' + uu + '2').addEventListener('click', fn_update_chart(uu, 2), false);
+				document.getElementById('lb' + uu + '3').addEventListener('click', fn_update_chart(uu, 3), false);
+				document.getElementById('lb' + uu + '4').addEventListener('click', fn_update_chart(uu, 4), false);
+				document.getElementById("icon-cancel"+uu).addEventListener('click', fn_item_cancel(uu), false);
+			}
+			document.getElementById("icon-set-cancel").addEventListener('click', function() { \
+				t = document.getElementById("input-itemset").value; 
+				if(t == '') {
+					closeSetForm();
+				}
+				else {
+					document.getElementById("input-itemset").value=''; 
+					document.getElementById("input-itemset").focus();
+				}
+			}, false);
+			document.getElementById("icon-login-cancel").addEventListener('click', function() { \
+				tt = document.getElementById("input-login").value; 
+				if(tt == '') {
+					closeLoginForm();
+				}
+				else {
+					document.getElementById("input-login").value=''; 
+					document.getElementById("input-login").focus();
+				}
+			}, false);
+			document.getElementById("icon-createid-cancel").addEventListener('click', function() { \
+				tt = document.getElementById("input-createid").value; 
+				if(tt == '') {
+					closeCreateIDModal();
+				}
+				else {
+					document.getElementById("input-createid").value=''; 
+					document.getElementById("input-createid").focus();
+				}
+			}, false);
+
+			//update_charts(${ar});
+			setupWebSocket();
+			// innerHTML
+			document.getElementById("designed_by").innerHTML = "developed and designed by utylee studios 2019 /&nbsp;";
+			document.getElementById("gathered_from").innerHTML = "item images hosted by zamimg.com /&nbsp; ";
+			document.getElementById("dumped_at").innerHTML = "${server} DB dumped recently at &nbsp;";
+			## donation 제거
+			##document.getElementById("thx_for").innerHTML = "thanks for your";
+			##document.getElementById("donation").innerHTML = "<a href='http://npay.to/15fe4a50e584e996c30f' target='_blank'>NPay donation</a>";
+			##http://npay.to/15fe4a50e584e996c30f
+
+			//rq_fullpage();
+			rq_dumptime();
+			rq_itemset(cur_itemset);
+			update_serverlist();
+			rq_itemsets();
+
+			create_chart_objects();
+
+			## 차트객체 chart.js 6개를 생성합니다
+			<%doc>
+			% for a in ar.keys():
+			var data_ = [];
+			//alert('${ar[a]['min_chain'][-1]}');
+			
+			##% for m_ in ar[a]['min_chain'][-15:]:
+				####data_.push(Math.floor(${m_}/10000));
+				##data_.push(${m_}/10000);
+			##% endfor
+			var cur_min_chain = ${ar[a]['min_chain']};
+			for(let ii = cur_min_chain.length - chart_column_num;ii <= cur_min_chain.length - 1; ii++){
+				data_.push(cur_min_chain[ii]/10000);
+			}
+
+			var labels_ = [];
+			for(let l_=0;l_<chart_column_num;l_++){
+				labels_.push("");
+			}
+			window.chartData${loop.index} = {
+				/*
+				labels: ["", "", "", "", "", "", "", "", "", "",\
+						"", "", "", "", ""], //"", "", ""],
+						*/
+				labels: labels_,
+				datasets: [{
+					data: data_
+				}
+				]
+			};
+
+			window.chLine${loop.index} = document.getElementById("chLine${loop.index}");
+			if(chLine${loop.index}) {
+				window.chart${loop.index} = new Chart(chLine${loop.index}, {
+					type: 'line',
+					data: chartData${loop.index},
+					options: {
+						scales: {
+							yAxes: [{
+								ticks: {
+									beginAtZero: false
+								}
+							}]
+						},
+						legend: {
+							display: false
+						},
+						## explorer에서의 차트 사이즈 안먹히는 문제로 수동모드로 사이즈 정해주기로 했습니다
+						responsive: false
+					}
+				});
+			}
+			% endfor
+			</%doc>
+		});
+
+		function rq_itemsets(fn_callback) {
+			// 역시 vanilla js 를 사용해 봅니다
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					itemsets = data.itemsets;
+					update_itemset_dropdown();
+					if(fn_callback) { 
+						fn_callback();
+					}
+				}
+			};
+			var dummy = new Date().getTime();
+			xhttp.open("GET", '/rq_itemsets/' + cur_user + '/' + dummy, true);
+			xhttp.send();
+		}
+
+		function rq_itemset(itemset, fn_callback=0) {
+			// 역시 vanilla js 를 사용해 봅니다
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					data_ = data.data
+					l_ = Object.keys(data_);
+					if(l_ < 5) {
+						##alert('이미 삭제된 세트입니다');
+						show_modal_info('없는 세트명입니다', 1300);
+						setTimeout(rq_itemsets(function (){change_itemset('기본구성');}),100);
+						##setTimeout(change_itemset('기본구성'),100);
+					}
+					else {
+						s_ = l_.length;
+						cur_itemset_code = data.code; 
+						##alert('in rq_itemset:' + cur_itemset_code);
+						##window.history.pushState('', '', '/u/' + cur_user_code + '/' + cur_itemset_code);
+						for (let i=0;i < s_;i++) {
+							rq_itemdata(i, data_[i]['item']);
+						}
+						if(fn_callback) {
+							fn_callback();
+						}
+					}
+				}
+			};
+			var dummy = new Date().getTime();
+			xhttp.open("GET", '/rq_itemset/' + cur_user + '/' + itemset + '/' + dummy, true);
+			xhttp.send();
+		}
+
+		function rq_itemdata(n, name) {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					update_item_area(data.num, data.itemdata);
+					## 모든 item이 갱신되지 않더라도 spinner를 숨기도록 합니다
+					hide_spinner();
+				}
+			};
+			##fullstr = collect_items_tostring(n, name);
+			var dummy = new Date().getTime();
+			xhttp.open("GET", '/rq_item/' + n + '/' + server + '/' + name + '/' + dummy, true);
+			##xhttp.open("GET", '/rq_item/' + cur_user + '/' + n + '/' + server + '/' 
+									##+ fullstr + '/' + dummy, true);
+			xhttp.send();
+		}
+
+		function collect_items_tostring(n, name) {
+			var str = '';
+			for(let i=0;i<5;i++) {
+				if(i==Number(n)) {
+					str += name.trim();
+				}
+				else {
+					str += document.getElementById('itemname'+i).innerHTML.trim();
+				}
+				str += ',';
+			}
+			str += document.getElementById('itemname5').innerHTML.trim();
+			return str;
+		}
+
+		function rq_dumptime() {
+			// 역시 vanilla js 를 사용해 봅니다
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					update_dumped_time(data.time);
+				}
+			};
+			## 캐싱해도 괜찮은 컨텐츠입니다. dummy를 제거합니다
+			##var dummy = new Date().getTime();
+			xhttp.open("GET", '/rq_servertime/' + server , true);
+			xhttp.send();
+		}
+
+		function rq_fullpage() {
+			// 역시 vanilla js 를 사용해 봅니다
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					update_page(data);
+				}
+			};
+			var dummy = new Date().getTime();
+			xhttp.open("GET", '/update/' + server + '/' + \
+								cur_user + '/' + cur_itemset + '/' + dummy, true);
+			xhttp.send();
+		}
+
+		function create_chart_objects() {
+			//window[eval('k'+1)] = document.getElementById("chLine" + 1);
+
+			for (let i=0;i<6;i++) {
+				var labels_ = [];
+				for(let l_=0;l_<chart_column_num;l_++){
+					labels_.push("");
+				}
+				if(eval('chLine' + i)) {
+					##window.chart${loop.index} = new Chart(chLine${loop.index}, {
+					window.chart[i] = new Chart(eval('chLine'+i), {
+						type: 'line',
+						##data: chartData${loop.index},
+						data: {
+							labels: labels_,
+							datasets: [{
+								data: [] }]},
+						options: {
+							scales: {
+								yAxes: [{
+									ticks: {
+										beginAtZero: false
+									}
+								}]
+							},
+							legend: {
+								display: false
+							},
+							## explorer에서의 차트 사이즈 안먹히는 문제로 수동모드로 사이즈 정해주기로 했습니다
+							responsive: false
+						}
+					});
+				}
+				<%doc>
+				</%doc>
+			} // end-for
+		} // end-function create-chart-objects()
+	</script>
+</%block>
