@@ -1,0 +1,8 @@
+greenlet==0.4.16
+jedi==0.17.2
+msgpack==1.0.0
+parso==0.7.1
+pynvim==0.4.1
+PyQt5==5.15.1
+PyQt5-sip==12.8.1
+qasync==0.9.4
